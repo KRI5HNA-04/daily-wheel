@@ -5,6 +5,7 @@ import WheelCanvas from "./components/WheelCanvas.jsx";
 import ResultCards from "./components/ResultCards.jsx";
 import PeoplePanel from "./components/PeoplePanel.jsx";
 import Toast from "./components/Toast.jsx";
+import logo from "./assets/images.png";
 
 function normalizeSharedPeople(people) {
   if (!Array.isArray(people)) return [];
@@ -160,7 +161,7 @@ export default function App() {
             <div>
               <h1 className="app-title">
                 <img
-                  src="/images.png"
+                  src={logo}
                   alt="MSG"
                   className="app-logo"
                 />
