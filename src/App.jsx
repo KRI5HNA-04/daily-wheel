@@ -160,7 +160,7 @@ export default function App() {
             <div>
               <h1 className="app-title">
                 <img
-                  src="./images.png"
+                  src="/images.png"
                   alt="MSG"
                   className="app-logo"
                 />
