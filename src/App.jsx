@@ -4,7 +4,6 @@ import { colorFor, pickRandom, uid } from "./utils/wheel.js";
 import WheelCanvas from "./components/WheelCanvas.jsx";
 import ResultCards from "./components/ResultCards.jsx";
 import PeoplePanel from "./components/PeoplePanel.jsx";
-import HistoryPanel from "./components/HistoryPanel.jsx";
 import Toast from "./components/Toast.jsx";
 
 function normalizeSharedPeople(people) {
@@ -159,7 +158,14 @@ export default function App() {
         <header className="app-header">
           <div className="header-row">
             <div>
-              <h1>🎯 Daily Scrum Wheel</h1>
+              <h1 className="app-title">
+                <img
+                  src="./images.png"
+                  alt="MSG"
+                  className="app-logo"
+                />
+                <span>Daily Scrum Wheel</span>
+              </h1>
               <p className="subtitle">Spin to decide who presents tomorrow</p>
             </div>
             <button type="button" className="share-team-btn" onClick={shareTeam}>
@@ -171,14 +177,16 @@ export default function App() {
         <main className="layout">
           <section className="wheel-section">
             <WheelCanvas ref={wheelRef} people={people}>
-              <button
-                type="button"
-                className="spin-btn"
-                onClick={spin}
-                disabled={spinning}
-              >
-                SPIN
-              </button>
+              {people.filter((p) => p.present !== false).length >= 2 && (
+                <button
+                  type="button"
+                  className="spin-btn"
+                  onClick={spin}
+                  disabled={spinning}
+                >
+                  SPIN
+                </button>
+              )}
             </WheelCanvas>
 
             <ResultCards next={latest?.name} last={previous?.name} />
@@ -193,7 +201,6 @@ export default function App() {
               onSetAllPresent={setAllPresent}
               onShare={shareTeam}
             />
-            <HistoryPanel history={history} />
           </section>
         </main>
 

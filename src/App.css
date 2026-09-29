@@ -230,7 +230,11 @@ body {
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+}
+
+.panel-block {
+  flex: 1;
+  min-height: 580px;
 }
 
 .panel-block {
@@ -446,6 +450,114 @@ body {
 .history-list::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
+}
+
+/* ================================
+   HEADER
+   ================================ */
+
+.app-header {
+  width: 100%;
+  padding: 28px 0 10px;
+}
+
+.header-row {
+  width: min(1100px, 92%);
+  margin: 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 30px;
+}
+
+.brand-section {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Logo + title */
+.app-title {
+  display: flex;
+  align-items:flex-end;
+  gap: 20px;
+
+  margin: 0;
+
+  font-size: 2.25rem;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+}
+
+/* Your MSG logo */
+.app-logo {
+  width: 100px;
+  height: 40px;
+
+  object-fit: contain;
+  object-position: center;
+
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Subtitle */
+.subtitle {
+  margin: 8px 0 0 94px;
+
+  font-size: 1rem;
+  line-height: 1.5;
+
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* ================================
+   SHARE BUTTON
+   ================================ */
+
+.share-team-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  padding: 11px 17px;
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+
+  background: rgba(255, 255, 255, 0.08);
+
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.share-team-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+
+  border-color: rgba(255, 255, 255, 0.22);
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.share-team-btn:active {
+  transform: translateY(0);
 }
 
 .header-row {
