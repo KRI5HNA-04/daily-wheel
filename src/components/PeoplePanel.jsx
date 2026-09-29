@@ -6,6 +6,7 @@ export default function PeoplePanel({
   onRemove,
   onTogglePresent,
   onSetAllPresent,
+  onShare,
 }) {
   const [name, setName] = useState("");
 
@@ -35,6 +36,9 @@ export default function PeoplePanel({
       <div className="presence-actions">
         <span className="hint">Check off who's in today's standup</span>
         <span className="presence-buttons">
+          <button type="button" className="link-btn" onClick={onShare}>
+            Share list
+          </button>
           <button type="button" className="link-btn" onClick={() => onSetAllPresent(true)}>
             All present
           </button>
