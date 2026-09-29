@@ -18,7 +18,13 @@ export default function PeoplePanel({
 
   return (
     <div className="panel-block">
-      <h2>Team Members</h2>
+      <div className="panel-heading-row">
+        <h2>Team Members</h2>
+        <button type="button" className="share-list-btn" onClick={onShare} disabled={!people.length}>
+          ↗ Share list
+        </button>
+      </div>
+
       <form className="add-form" onSubmit={handleSubmit}>
         <input
           type="text"
@@ -36,9 +42,6 @@ export default function PeoplePanel({
       <div className="presence-actions">
         <span className="hint">Check off who's in today's standup</span>
         <span className="presence-buttons">
-          <button type="button" className="link-btn" onClick={onShare}>
-            Share list
-          </button>
           <button type="button" className="link-btn" onClick={() => onSetAllPresent(true)}>
             All present
           </button>

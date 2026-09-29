@@ -448,38 +448,84 @@ body {
   border-radius: 3px;
 }
 
-/* Sharing */
-.app-header {
+.header-row {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
   gap: 1rem;
+  position: relative;
 }
 
-.share-btn {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.07);
-  color: #fff;
-  border-radius: 12px;
-  padding: 0.7rem 1rem;
-  font: inherit;
-  font-weight: 700;
+.header-row > div {
+  text-align: center;
+}
+
+.share-team-btn,
+.share-list-btn {
+  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
+  font-weight: 650;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
-.share-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  transform: translateY(-1px);
+.share-team-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 10px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.85rem;
 }
 
-@media (max-width: 700px) {
-  .app-header {
-    align-items: stretch;
-    flex-direction: column;
+.share-team-btn:hover,
+.share-list-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.share-team-btn:hover {
+  transform: translateY(-50%) translateY(-1px);
+}
+
+.panel-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.panel-heading-row h2 {
+  margin: 0;
+}
+
+.share-list-btn {
+  border-radius: 8px;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.75rem;
+  color: var(--accent-2);
+}
+
+.share-list-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (max-width: 620px) {
+  .header-row {
+    display: block;
   }
 
-  .share-btn {
-    align-self: flex-start;
+  .share-team-btn {
+    position: static;
+    transform: none;
+    margin-top: 1rem;
+  }
+
+  .share-team-btn:hover {
+    transform: translateY(-1px);
   }
 }

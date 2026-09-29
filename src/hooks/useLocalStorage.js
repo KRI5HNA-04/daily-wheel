@@ -4,23 +4,15 @@ export function useLocalStorage(key, initialValue) {
   const [value, setValue] = useState(() => {
     try {
       const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : resolveInitialValue(initialValue);
+      return raw ? JSON.parse(raw) : initialValue;
     } catch {
-      return resolveInitialValue(initialValue);
+      return initialValue;
     }
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      // Ignore storage errors (e.g. private browsing/storage quota).
-    }
+    localStorage.setItem(key, JSON.stringify(value));
   }, [key, value]);
 
   return [value, setValue];
-}
-
-function resolveInitialValue(initialValue) {
-  return typeof initialValue === "function" ? initialValue() : initialValue;
 }

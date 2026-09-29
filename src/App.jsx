@@ -7,75 +7,69 @@ import PeoplePanel from "./components/PeoplePanel.jsx";
 import HistoryPanel from "./components/HistoryPanel.jsx";
 import Toast from "./components/Toast.jsx";
 
-const PEOPLE_STORAGE_KEY = "scrumWheel.people";
-const HISTORY_STORAGE_KEY = "scrumWheel.history";
-const SHARE_PARAM = "people";
+function normalizeSharedPeople(people) {
+  if (!Array.isArray(people)) return [];
 
-function readPeopleFromShareLink() {
-  try {
-    const encoded = new URLSearchParams(window.location.search).get(SHARE_PARAM);
-    if (!encoded) return null;
-
-    const parsed = JSON.parse(decodeURIComponent(encoded));
-    if (!Array.isArray(parsed)) return null;
-
-    return parsed
-      .filter((person) => person && typeof person.name === "string" && person.name.trim())
-      .map((person, index) => ({
-        id: typeof person.id === "string" && person.id ? person.id : uid(),
-        name: person.name.trim().slice(0, 30),
-        color: typeof person.color === "string" ? person.color : colorFor(index),
-        present: person.present !== false,
-      }));
-  } catch {
-    return null;
-  }
-}
-
-function createShareLink(people) {
-  const payload = people.map(({ id, name, color, present }) => ({
-    id,
-    name,
-    color,
-    present: present !== false,
-  }));
-
-  const url = new URL(window.location.href);
-  url.search = "";
-  url.searchParams.set(SHARE_PARAM, encodeURIComponent(JSON.stringify(payload)));
-  return url.toString();
+  return people.map((person, index) => ({
+    id: typeof person?.id === "string" ? person.id : uid(),
+    name: String(person?.name || "").trim(),
+    color: person?.color || colorFor(index),
+    present: person?.present !== false,
+  })).filter((person) => person.name);
 }
 
 export default function App() {
-  const sharedPeople = readPeopleFromShareLink();
-  const [people, setPeople] = useLocalStorage(PEOPLE_STORAGE_KEY, sharedPeople ?? []);
-  const [history, setHistory] = useLocalStorage(HISTORY_STORAGE_KEY, []);
+  const [people, setPeople] = useLocalStorage("scrumWheel.people", []);
+  const [history, setHistory] = useLocalStorage("scrumWheel.history", []);
   const [spinning, setSpinning] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
   const [toast, setToast] = useState({ message: "", visible: false });
   const wheelRef = useRef(null);
   const toastTimer = useRef(null);
 
-  // A shared link is a snapshot of the owner's participant list. Once loaded,
-  // remove the query parameter so refreshing the page uses localStorage normally.
-  useEffect(() => {
-    if (!sharedPeople) return;
-
-    // Shared links take precedence over an existing local participant list.
-    // This makes the same link work even if the recipient already used the app.
-    setPeople(sharedPeople);
-
-    const url = new URL(window.location.href);
-    url.searchParams.delete(SHARE_PARAM);
-    window.history.replaceState({}, "", url.toString());
-    showToast("Shared participant list loaded.");
-  }, []);
-
   const showToast = useCallback((message) => {
     setToast({ message, visible: true });
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast((t) => ({ ...t, visible: false })), 2800);
   }, []);
+
+  useEffect(() => {
+    const shareId = new URLSearchParams(window.location.search).get("s");
+    if (!shareId) return;
+
+    let cancelled = false;
+    setStatusMsg("Loading shared team…");
+
+    fetch(`/api/share?s=${encodeURIComponent(shareId)}`)
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Unable to load shared team.");
+        return data;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        const sharedPeople = normalizeSharedPeople(data.people);
+        if (!sharedPeople.length) throw new Error("The shared team is empty.");
+
+        setPeople(sharedPeople);
+        setStatusMsg("");
+        showToast(`Loaded ${sharedPeople.length} shared team member${sharedPeople.length === 1 ? "" : "s"}.`);
+
+        // Remove the share id from the visible URL after loading. The current
+        // participant list remains in localStorage, while the copied share link
+        // stays clean and short.
+        window.history.replaceState({}, "", window.location.pathname);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setStatusMsg("");
+        showToast(error.message || "Unable to load shared team.");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setPeople, showToast]);
 
   function addPerson(name) {
     const trimmed = name.trim();
@@ -84,10 +78,7 @@ export default function App() {
       showToast(`${trimmed} is already on the team.`);
       return;
     }
-    setPeople([
-      ...people,
-      { id: uid(), name: trimmed, color: colorFor(people.length), present: true },
-    ]);
+    setPeople([...people, { id: uid(), name: trimmed, color: colorFor(people.length), present: true }]);
   }
 
   function removePerson(id) {
@@ -104,31 +95,32 @@ export default function App() {
     setPeople(people.map((p) => ({ ...p, present })));
   }
 
-  async function sharePeople() {
-    if (people.length === 0) {
+  async function shareTeam() {
+    if (!people.length) {
       showToast("Add at least one team member before sharing.");
       return;
     }
 
-    const shareUrl = createShareLink(people);
-
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: "Daily Scrum Wheel",
-          text: "Open this Daily Scrum Wheel with our team members already added.",
-          url: shareUrl,
-        });
-        return;
-      }
+      setStatusMsg("Creating share link…");
+      const response = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          people: people.map(({ id, name, color, present }) => ({ id, name, color, present })),
+        }),
+      });
 
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to create share link.");
+
+      const shareUrl = `${window.location.origin}${window.location.pathname}?s=${encodeURIComponent(data.id)}`;
       await navigator.clipboard.writeText(shareUrl);
-      showToast("Share link copied to clipboard!");
+      setStatusMsg("");
+      showToast("Share link copied! Anyone with the link can see this team.");
     } catch (error) {
-      // Closing the native share dialog is not an error from the user's perspective.
-      if (error?.name !== "AbortError") {
-        showToast("Couldn't copy the link. Please copy it from the address bar.");
-      }
+      setStatusMsg("");
+      showToast(error.message || "Unable to create share link.");
     }
   }
 
@@ -165,13 +157,15 @@ export default function App() {
 
       <div className="app">
         <header className="app-header">
-          <div>
-            <h1>🎯 Daily Scrum Wheel</h1>
-            <p className="subtitle">Spin to decide who presents tomorrow</p>
+          <div className="header-row">
+            <div>
+              <h1>🎯 Daily Scrum Wheel</h1>
+              <p className="subtitle">Spin to decide who presents tomorrow</p>
+            </div>
+            <button type="button" className="share-team-btn" onClick={shareTeam}>
+              ↗ Share Team
+            </button>
           </div>
-          <button type="button" className="share-btn" onClick={sharePeople}>
-            ↗ Share Team
-          </button>
         </header>
 
         <main className="layout">
@@ -197,7 +191,7 @@ export default function App() {
               onRemove={removePerson}
               onTogglePresent={togglePresent}
               onSetAllPresent={setAllPresent}
-              onShare={sharePeople}
+              onShare={shareTeam}
             />
             <HistoryPanel history={history} />
           </section>
