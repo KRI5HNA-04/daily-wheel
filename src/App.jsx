@@ -21,6 +21,7 @@ function normalizeSharedPeople(people) {
 export default function App() {
   const [people, setPeople] = useLocalStorage("scrumWheel.people", []);
   const [history, setHistory] = useLocalStorage("scrumWheel.history", []);
+  const [teamId, setTeamId] = useLocalStorage("scrumWheel.teamId", null);
   const [spinning, setSpinning] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
   const [toast, setToast] = useState({ message: "", visible: false });
@@ -52,6 +53,7 @@ export default function App() {
         if (!sharedPeople.length) throw new Error("The shared team is empty.");
 
         setPeople(sharedPeople);
+        setTeamId(shareId);
         setStatusMsg("");
         showToast(`Loaded ${sharedPeople.length} shared team member${sharedPeople.length === 1 ? "" : "s"}.`);
 
@@ -69,7 +71,37 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [setPeople, showToast]);
+  }, [setPeople, setTeamId, showToast]);
+
+  // Sync the latest winner from Redis so all users see the same "Presenting Tomorrow".
+  // Runs on mount and polls every 30 seconds while a teamId is set.
+  useEffect(() => {
+    if (!teamId) return;
+
+    let cancelled = false;
+
+    function mergeRemoteWinner(entry) {
+      if (!entry || cancelled) return;
+      setHistory((prev) => {
+        if (prev.some((h) => h.date === entry.date)) return prev;
+        return [...prev, entry];
+      });
+    }
+
+    function fetchWinner() {
+      fetch(`/api/winner?t=${encodeURIComponent(teamId)}`)
+        .then((r) => r.json())
+        .then((data) => mergeRemoteWinner(data.entry))
+        .catch(() => {});
+    }
+
+    fetchWinner();
+    const interval = setInterval(fetchWinner, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [teamId, setHistory]);
 
   function addPerson(name) {
     const trimmed = name.trim();
@@ -114,6 +146,7 @@ export default function App() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Unable to create share link.");
 
+      setTeamId(data.id);
       const shareUrl = `${window.location.origin}${window.location.pathname}?s=${encodeURIComponent(data.id)}`;
       await navigator.clipboard.writeText(shareUrl);
       setStatusMsg("");
@@ -137,10 +170,19 @@ export default function App() {
     setStatusMsg("Spinning…");
 
     wheelRef.current.spinToWinner(winner.id, () => {
-      setHistory([...history, { id: winner.id, name: winner.name, date: Date.now() }]);
+      const entry = { id: winner.id, name: winner.name, date: Date.now() };
+      setHistory([...history, entry]);
       setSpinning(false);
       setStatusMsg("");
       showToast(`🎉 ${winner.name} will present tomorrow!`);
+
+      if (teamId) {
+        fetch(`/api/winner?t=${encodeURIComponent(teamId)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ entry }),
+        }).catch(() => {});
+      }
     });
   }
 
